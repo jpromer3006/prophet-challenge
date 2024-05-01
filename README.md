@@ -1,3 +1,3 @@
 # prophet-challenge
 Module 8 Challenge
-##Using OllamaAI in terminal for debugging
+##Using OllamaAI in terminal 
