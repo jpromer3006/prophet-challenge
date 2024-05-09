@@ -1,4 +1,5 @@
 # prophet-challenge
+<<<<<<< HEAD
 Module 8 Challenge ##Tools used: Co-pilot; XbertAssistant; ChatGpt
 
 Here's a summary of actions taken to analyze MercadoLibre's search traffic and its potential correlations to financial events and stock price patterns, using Google Colab and the Prophet model for the time series forecasting:
@@ -22,3 +23,8 @@ Forecast: The near-term forecast provides a favorable trend in MercadoLibre’s 
 
 Conclusion
 The project successfully utilized advanced data analytics and time series modeling to provide MercadoLibre with actionable insights on optimizing marketing strategies based on user search patterns. It also explored the interplay between external financial events and search behavior, offering guidance in strategic decision-making and financial forecasting. This comprehensive approach not only highlighted critical seasonal trends but also identified potential opportunities for enhancing customer engagement based on predictable search traffic patterns.
+=======
+Module 8 Challenge
+##Using Google Colab Ai & Xbert Learning Assistant
+Forecasting Market Trends in the Stock Market for Mercardo Libre
+>>>>>>> ea02d9e9e3c22b42e7b18c83547f4b2e82413e21
