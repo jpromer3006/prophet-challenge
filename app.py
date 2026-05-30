@@ -88,46 +88,67 @@ with tab_forecast:
         help="Forecasting too far beyond the data gets unreliable, so we cap it at 90 days.",
     )
 
+    view = st.radio(
+        "Chart view",
+        ["🔍 Forecast & recent weeks", "🌐 Full history (daily average)"],
+        horizontal=True,
+        help="Zoom in on the upcoming forecast, or smooth the whole history into a "
+        "daily trend line. (The raw data is hourly, so the full range looks busy "
+        "unless it's averaged.)",
+    )
+
     with st.spinner("Crunching the forecast…"):
         fc = get_forecast(periods=days * 24)
 
     history = trends["Search Trends"]
+    split = history.index.max()
+    fc_idx = fc.set_index("ds")
+    future = fc_idx[fc_idx.index > split]
+
+    def add_band(fig, x, lower, upper):
+        """Shade the confidence interval as a filled band."""
+        fig.add_trace(go.Scatter(
+            x=x, y=upper, mode="lines", line=dict(width=0),
+            showlegend=False, hoverinfo="skip"))
+        fig.add_trace(go.Scatter(
+            x=x, y=lower, mode="lines", line=dict(width=0), fill="tonexty",
+            fillcolor="rgba(0,120,255,0.15)", name="Likely range", hoverinfo="skip"))
+
     fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            x=fc["ds"], y=fc["yhat_upper"], mode="lines",
-            line=dict(width=0), showlegend=False, hoverinfo="skip",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=fc["ds"], y=fc["yhat_lower"], mode="lines", line=dict(width=0),
-            fill="tonexty", fillcolor="rgba(0,120,255,0.15)",
-            name="Likely range", hoverinfo="skip",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=fc["ds"], y=fc["yhat"], mode="lines",
-            line=dict(color="#0078ff"), name="Forecast",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=history.index, y=history.values, mode="lines",
-            line=dict(color="#9aa0a6", width=1), name="Actual (history)",
-        )
-    )
+    if view.startswith("🔍"):
+        # Zoom: recent hourly history + the upcoming forecast only.
+        window = max(days, 14)
+        recent = history[history.index >= split - pd.Timedelta(days=window)]
+        add_band(fig, future.index, future["yhat_lower"], future["yhat_upper"])
+        fig.add_trace(go.Scatter(
+            x=future.index, y=future["yhat"], mode="lines",
+            line=dict(color="#0078ff"), name="Forecast"))
+        fig.add_trace(go.Scatter(
+            x=recent.index, y=recent.values, mode="lines",
+            line=dict(color="#9aa0a6", width=1.5), name="Actual (history)"))
+        subtitle = f"Last {window} days of actual data + {days}-day forecast"
+    else:
+        # Smoothed: whole history as a daily average + future daily forecast.
+        hist_daily = history.resample("D").mean()
+        fut_daily = future[["yhat", "yhat_lower", "yhat_upper"]].resample("D").mean()
+        add_band(fig, fut_daily.index, fut_daily["yhat_lower"], fut_daily["yhat_upper"])
+        fig.add_trace(go.Scatter(
+            x=fut_daily.index, y=fut_daily["yhat"], mode="lines",
+            line=dict(color="#0078ff"), name="Forecast (daily avg)"))
+        fig.add_trace(go.Scatter(
+            x=hist_daily.index, y=hist_daily.values, mode="lines",
+            line=dict(color="#9aa0a6", width=1.5), name="Actual (daily avg)"))
+        subtitle = "Daily average across the full history"
+
     fig.update_layout(
-        height=480, xaxis_title="Date", yaxis_title="Search interest",
+        height=460, xaxis_title="Date", yaxis_title="Search interest", title=subtitle,
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
-        margin=dict(t=40),
+        margin=dict(t=60),
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    forecast_window = fc.tail(days * 24)
+    future_avg = future["yhat"].mean()
     recent_avg = history.tail(days * 24).mean()
-    future_avg = forecast_window["yhat"].mean()
     delta = (future_avg - recent_avg) / recent_avg * 100
     direction = "higher" if delta >= 0 else "lower"
     st.success(
