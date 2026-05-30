@@ -18,5 +18,8 @@ Thumbs.db
 # Streamlit
 .streamlit/secrets.toml
 
+# Local dev tooling
+.claude/
+
 # Note: data/ and models/ ARE committed on purpose (cached data + pre-trained model)
 # so the public app loads instantly without re-fetching or re-training.
